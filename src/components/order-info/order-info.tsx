@@ -1,70 +1,26 @@
-import { FC, useEffect, useMemo } from 'react';
-import { Preloader, OrderInfoUI } from '@ui';
-import { TIngredient } from '@utils-types';
+import { FC, useEffect } from 'react';
+import { OrderInfoUI, Preloader } from '@ui';
+import { TIsModal } from '@utils-types';
 import { useDispatch, useSelector } from '@store';
 import { useParams } from 'react-router-dom';
 import {
   fetchOrder,
-  selectIngredients,
   selectIngredientsIsLoading,
-  selectIsOrderLoading,
-  selectOrderModalData
+  selectIsOrderLoading
 } from '@slices';
+import { useOrderInfoData } from '@hooks/useOrderInfoData';
 
-export const OrderInfo: FC = () => {
+export const OrderInfo: FC<TIsModal> = ({ isModal }) => {
   const dispatch = useDispatch();
-
-  const isIngredientsLoading = useSelector(selectIngredientsIsLoading);
-  const ingredients = useSelector(selectIngredients);
-  const isOrderLoading = useSelector(selectIsOrderLoading);
-  const orderModalData = useSelector(selectOrderModalData);
-
   const { number } = useParams<{ number: string }>();
 
   useEffect(() => {
     dispatch(fetchOrder(Number(number)));
-  }, [dispatch]);
+  }, [dispatch, number]);
 
-  const orderInfo = useMemo(() => {
-    if (!orderModalData || !ingredients.length) return null;
-
-    const date = new Date(orderModalData.createdAt);
-
-    type TIngredientsWithCount = {
-      [key: string]: TIngredient & { count: number };
-    };
-
-    const ingredientsInfo = orderModalData.ingredients.reduce(
-      (acc: TIngredientsWithCount, item) => {
-        if (!acc[item]) {
-          const ingredient = ingredients.find((ing) => ing._id === item);
-          if (ingredient) {
-            acc[item] = {
-              ...ingredient,
-              count: 1
-            };
-          }
-        } else {
-          acc[item].count++;
-        }
-
-        return acc;
-      },
-      {}
-    );
-
-    const total = Object.values(ingredientsInfo).reduce(
-      (acc, item) => acc + item.price * item.count,
-      0
-    );
-
-    return {
-      ...orderModalData,
-      ingredientsInfo,
-      date,
-      total
-    };
-  }, [orderModalData, ingredients]);
+  const isIngredientsLoading = useSelector(selectIngredientsIsLoading);
+  const isOrderLoading = useSelector(selectIsOrderLoading);
+  const orderInfo = useOrderInfoData();
 
   if (isIngredientsLoading || isOrderLoading) {
     return <Preloader />;
@@ -74,5 +30,6 @@ export const OrderInfo: FC = () => {
     return null;
   }
 
-  return <OrderInfoUI orderInfo={orderInfo} />;
+  const title = `#${orderInfo.number}`;
+  return <OrderInfoUI orderInfo={orderInfo} isModal={isModal} title={title} />;
 };

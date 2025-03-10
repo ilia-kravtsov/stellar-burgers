@@ -57,3 +57,7 @@ export type TFeed = {
   isLoading?: boolean;
   error?: TError;
 };
+
+export type TIsModal = {
+  isModal?: boolean;
+};
